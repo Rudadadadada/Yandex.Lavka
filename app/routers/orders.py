@@ -1,5 +1,9 @@
+from typing import List
+
 from fastapi import APIRouter, Request
 from starlette import status
+
+from app.schemas.__schemes import OrderModel, CompletedOrderModel
 
 order = APIRouter()
 
@@ -10,8 +14,7 @@ order = APIRouter()
     description='Receives a list with order data in json format',
     name='Create order'
 )
-async def create_order(request: Request):
-    request = await request.json()
+async def create_order(orders: List[OrderModel]):
     return None
 
 
@@ -21,7 +24,7 @@ async def create_order(request: Request):
     description='Returns order info by id',
     name='Get order',
 )
-async def get_order():
+async def get_order() -> OrderModel:
     return None
 
 
@@ -31,7 +34,7 @@ async def get_order():
     description='Returns all orders info',
     name='Get orders',
 )
-async def get_orders():
+async def get_orders() -> List[OrderModel]:
     return None
 
 
@@ -41,6 +44,6 @@ async def get_orders():
     description='Receives a list with completed order data in json format',
     name='Complete order'
 )
-async def complete_order(request: Request):
-    request = await request.json()
+async def complete_order(completed_orders: List[CompletedOrderModel]):
+    # request = await request.json()
     return None

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Time, orm
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Time
 from sqlalchemy_serializer import SerializerMixin
 
 from app.database.db_session import Base
@@ -7,52 +7,72 @@ from app.database.db_session import Base
 class Courier(Base, SerializerMixin):
     __tablename__ = 'couriers'
 
-    courier_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    type = Column(String, nullable=False)
+    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    courier_type: str = Column(String, nullable=False)
 
-    regions = Column(Integer, ForeignKey('regions.id'), nullable=False)
-    working_hours = Column(Integer, ForeignKey('working_hours.id'), nullable=False)
-
-    region = orm.relationship('Region')
-    time = orm.relationship('WorkingHours')
-
-
-class DeliveryHours(Base, SerializerMixin):
-    __tablename__ = 'delivery_hours'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    start_time = Column(Time, nullable=False)
-    finished_time = Column(Time, nullable=False)
-
-    couriers = orm.relationship('Order', back_populates='working_time')
-
-
-class Order(Base, SerializerMixin):
-    __tablename__ = 'orders'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    weight = Column(Integer, nullable=False)
-    region = Column(Integer, nullable=False)
-    delivery_hours = Column(Time, nullable=False)
-    cost = Column(Integer, nullable=False)
-
-    time = orm.relationship('DeliveryHours')
+    def __init__(self, courier_type):
+        self.courier_type = courier_type
 
 
 class Region(Base, SerializerMixin):
     __tablename__ = 'regions'
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    region = Column(Integer, nullable=False)
+    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    region: int = Column(Integer, nullable=False)
 
-    couriers = orm.relationship('Courier', back_populates='regions')
+    def __init__(self, region):
+        self.region = region
 
 
-class WorkingHours(Base, SerializerMixin):
-    __tablename__ = 'working_hours'
+class CourierWorkingHour(Base, SerializerMixin):
+    __tablename__ = 'couriers_working_hours'
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    start_time = Column(Time, nullable=False)
-    finished_time = Column(Time, nullable=False)
+    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    courier_id: int = Column(Integer, ForeignKey('couriers.id'), nullable=False)
+    start_time: Time = Column(Time, nullable=False)
+    end_time: Time = Column(Time, nullable=False)
 
-    couriers = orm.relationship('Courier', back_populates='working_hours')
+    def __init__(self, courier_id, start_time, end_time):
+        self.courier_id = courier_id
+        self.start_time = start_time
+        self.end_time = end_time
+
+
+class CourierRegion(Base, SerializerMixin):
+    __tablename__ = 'couriers_regions'
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    courier_id: int = Column(Integer, ForeignKey('couriers.id'), nullable=False)
+    region_id: int = Column(Integer, ForeignKey('regions.id'), nullable=False)
+
+    def __init__(self, courier_id, region_id):
+        self.courier_id = courier_id
+        self.region_id = region_id
+
+
+class OrderDeliveryHour(Base, SerializerMixin):
+    __tablename__ = 'orders_delivery_hours'
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    order_id: int = Column(Integer, ForeignKey('orders.id'), nullable=False)
+    start_time: Time = Column(Time, nullable=False)
+    end_time: Time = Column(Time, nullable=False)
+
+    def __init__(self, order_id, start_time, end_time):
+        self.order_id = order_id
+        self.start_time = start_time
+        self.end_time = end_time
+
+
+class Order(Base, SerializerMixin):
+    __tablename__ = 'orders'
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    weight: int = Column(Integer, nullable=False)
+    region: int = Column(Integer, nullable=False)
+    cost: int = Column(Integer, nullable=False)
+
+    def __init__(self, weight, region, cost):
+        self.weight = weight
+        self.region = region
+        self.cost = cost
