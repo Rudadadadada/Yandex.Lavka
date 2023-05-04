@@ -7,8 +7,8 @@ from app.database.db_session import Base
 class Courier(Base, SerializerMixin):
     __tablename__ = 'couriers'
 
-    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    courier_type: str = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    courier_type = Column(String, nullable=False)
 
     def __init__(self, courier_type):
         self.courier_type = courier_type
@@ -17,8 +17,8 @@ class Courier(Base, SerializerMixin):
 class Region(Base, SerializerMixin):
     __tablename__ = 'regions'
 
-    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    region: int = Column(Integer, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    region = Column(Integer, nullable=False)
 
     def __init__(self, region):
         self.region = region
@@ -27,10 +27,10 @@ class Region(Base, SerializerMixin):
 class CourierWorkingHour(Base, SerializerMixin):
     __tablename__ = 'couriers_working_hours'
 
-    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    courier_id: int = Column(Integer, ForeignKey('couriers.id'), nullable=False)
-    start_time: Time = Column(Time, nullable=False)
-    end_time: Time = Column(Time, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    courier_id = Column(Integer, ForeignKey('couriers.id'), nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
 
     def __init__(self, courier_id, start_time, end_time):
         self.courier_id = courier_id
@@ -41,9 +41,9 @@ class CourierWorkingHour(Base, SerializerMixin):
 class CourierRegion(Base, SerializerMixin):
     __tablename__ = 'couriers_regions'
 
-    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    courier_id: int = Column(Integer, ForeignKey('couriers.id'), nullable=False)
-    region_id: int = Column(Integer, ForeignKey('regions.id'), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    courier_id = Column(Integer, ForeignKey('couriers.id'), nullable=False)
+    region_id = Column(Integer, ForeignKey('regions.id'), nullable=False)
 
     def __init__(self, courier_id, region_id):
         self.courier_id = courier_id

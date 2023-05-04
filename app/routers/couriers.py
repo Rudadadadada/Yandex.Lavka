@@ -25,8 +25,7 @@ async def create_courier(couriers: CouriersModel):
     name='Get courier',
 )
 async def get_courier(courier_id: int) -> CourierModel:
-    courier_info = await get_courier_by_id(courier_id)
-    return CourierModel.parse_obj(courier_info)
+    return await get_courier_by_id(courier_id)
 
 
 @courier.get(
@@ -36,5 +35,4 @@ async def get_courier(courier_id: int) -> CourierModel:
     name='Get couriers',
 )
 async def get_couriers(offset: int = 0, limit: int = 1) -> CouriersModel:
-    couriers_info = await get_all_couriers()
-    return CouriersModel.parse_obj(couriers_info)
+    return await get_all_couriers(offset, limit)

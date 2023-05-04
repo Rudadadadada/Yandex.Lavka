@@ -1,9 +1,9 @@
-import datetime
-from typing import Set
+from starlette import status
 
 from app.database.__models import Courier, Region, CourierRegion, CourierWorkingHour
 from app.database.db_session import create_session
-from app.schemas.__schemes import CouriersModel
+from app.schemas.__schemes import CouriersModel, CourierModel
+from fastapi import HTTPException
 
 
 async def post_couriers(couriers: CouriersModel):
@@ -15,11 +15,17 @@ async def post_couriers(couriers: CouriersModel):
         session.commit()
 
         for region in courier.regions:
-            new_region = Region(region=region)
-            session.add(new_region)
-            session.commit()
+            region_id = list(session.query(Region).filter(Region.region == region))
+            if not region_id:
+                new_region = Region(region=region)
+                session.add(new_region)
+                session.commit()
 
-            new_courier_region = CourierRegion(courier_id=new_courier.id, region_id=new_region.id)
+                region_id = new_region.id
+            else:
+                region_id = region_id[0].id
+
+            new_courier_region = CourierRegion(courier_id=new_courier.id, region_id=region_id)
             session.add(new_courier_region)
             session.commit()
 
@@ -33,36 +39,68 @@ async def post_couriers(couriers: CouriersModel):
             session.commit()
 
 
-async def get_courier_by_id(courier_id: int):
+async def get_courier_by_id(courier_id: int) -> CourierModel:
     def time_to_string(time) -> str:
-        start_time = str(time[0].hour) + ':' + str(time[0].minute)
-        end_time = str(time[1].hour) + ':' + str(time[1].minute)
+        start_time = str(time[0].hour).rjust(2, '0') + ':' + str(time[0].minute).rjust(2, '0')
+        end_time = str(time[1].hour).rjust(2, '0') + ':' + str(time[1].minute).rjust(2, '0')
         return start_time + '-' + end_time
 
     session = create_session()
-
     courier_info = {}
 
-    type = session.query(Courier.courier_type).filter(Courier.id == courier_id)[0][0]
+    courier_data = list(session.query(Courier).filter(Courier.id == courier_id))
+    if not courier_data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"There is no courier with id = {courier_id}")
+    courier_type = courier_data[0].courier_type
+    courier_regions = list(map(lambda data: data[0],
+                               session.query(Region.region).
+                               outerjoin(CourierRegion, Region.id == CourierRegion.region_id).
+                               filter(CourierRegion.courier_id == courier_id)))
+    courier_working_hours = list(map(lambda data: time_to_string([data[0], data[1]]),
+                                     session.query(CourierWorkingHour.start_time, CourierWorkingHour.end_time).
+                                     filter(CourierWorkingHour.courier_id == courier_id)))
 
-    regions = [region[0] for region in session.query(
-        Region.region).outerjoin(
-        CourierRegion, Region.id == CourierRegion.region_id).filter(
-        CourierRegion.courier_id == courier_id)]
+    courier_info['courier_type'] = courier_type
+    courier_info['regions'] = courier_regions
+    courier_info['working_hours'] = courier_working_hours
 
-    working_hours = [time_to_string(wh) for wh in
-                     session.query(CourierWorkingHour.start_time,
-                                   CourierWorkingHour.end_time).filter(CourierWorkingHour.courier_id == courier_id)]
-    courier_info['courier_type'] = type
-    courier_info['regions'] = regions
-    courier_info['working_hours'] = working_hours
-    return courier_info
+    return CourierModel.parse_obj(courier_info)
 
 
-async def get_all_couriers(offset: int = 0, limit: int = 1):
+async def get_all_couriers(offset: int = 0, limit: int = 1) -> CouriersModel:
+    def time_to_string(time) -> str:
+        start_time = str(time[0].hour).rjust(2, '0') + ':' + str(time[0].minute).rjust(2, '0')
+        end_time = str(time[1].hour).rjust(2, '0') + ':' + str(time[1].minute).rjust(2, '0')
+        return start_time + '-' + end_time
+
     session = create_session()
-    couriers_id = [courier_id[0] for courier_id in session.query(Courier.id)]
+    couriers_info = {'couriers': []}
 
-    couriers_info = {'couriers': [await get_courier_by_id(courier_id) for courier_id in couriers_id]}
+    couriers_data = list(session.query(Courier.id, Courier.courier_type).filter(offset <= Courier.id,
+                                                                                Courier.id < offset + limit))
+    regions_data = list(session.query(CourierRegion.courier_id, Region.region).
+                        outerjoin(CourierRegion, Region.id == CourierRegion.region_id).
+                        filter(offset <= CourierRegion.courier_id,
+                               CourierRegion.courier_id < offset + limit))
+    working_hours_data = list(map(lambda data: (data[0], time_to_string([data[1], data[2]])),
+                                  session.query(CourierWorkingHour.courier_id,
+                                                CourierWorkingHour.start_time,
+                                                CourierWorkingHour.end_time).
+                                  filter(offset <= CourierWorkingHour.courier_id,
+                                         CourierWorkingHour.courier_id < offset + limit)))
+    for courier in couriers_data:
+        courier_info = {}
 
-    return couriers_info
+        courier_regions = list(map(lambda data: data[1],
+                                   filter(lambda data: data[0] == courier.id, regions_data)))
+        courier_working_hours = list(map(lambda data: data[1],
+                                         filter(lambda data: data[0] == courier.id, working_hours_data)))
+
+        courier_info['courier_type'] = courier.courier_type
+        courier_info['regions'] = courier_regions
+        courier_info['working_hours'] = courier_working_hours
+
+        couriers_info['couriers'].append(courier_info)
+
+    return CouriersModel.parse_obj(couriers_info)
