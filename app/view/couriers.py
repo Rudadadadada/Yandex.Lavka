@@ -1,9 +1,10 @@
+from fastapi import HTTPException
 from starlette import status
 
 from app.database.__models import Courier, Region, CourierRegion, CourierWorkingHour
 from app.database.db_session import create_session
 from app.schemas.__schemes import CouriersModel, CourierModel
-from fastapi import HTTPException
+from app.utils.time import time_to_string
 
 
 async def post_couriers(couriers: CouriersModel):
@@ -40,11 +41,6 @@ async def post_couriers(couriers: CouriersModel):
 
 
 async def get_courier_by_id(courier_id: int) -> CourierModel:
-    def time_to_string(time) -> str:
-        start_time = str(time[0].hour).rjust(2, '0') + ':' + str(time[0].minute).rjust(2, '0')
-        end_time = str(time[1].hour).rjust(2, '0') + ':' + str(time[1].minute).rjust(2, '0')
-        return start_time + '-' + end_time
-
     session = create_session()
     courier_info = {}
 
@@ -61,6 +57,8 @@ async def get_courier_by_id(courier_id: int) -> CourierModel:
                                      session.query(CourierWorkingHour.start_time, CourierWorkingHour.end_time).
                                      filter(CourierWorkingHour.courier_id == courier_id)))
 
+    session.close()
+
     courier_info['courier_type'] = courier_type
     courier_info['regions'] = courier_regions
     courier_info['working_hours'] = courier_working_hours
@@ -69,11 +67,6 @@ async def get_courier_by_id(courier_id: int) -> CourierModel:
 
 
 async def get_all_couriers(offset: int = 0, limit: int = 1) -> CouriersModel:
-    def time_to_string(time) -> str:
-        start_time = str(time[0].hour).rjust(2, '0') + ':' + str(time[0].minute).rjust(2, '0')
-        end_time = str(time[1].hour).rjust(2, '0') + ':' + str(time[1].minute).rjust(2, '0')
-        return start_time + '-' + end_time
-
     session = create_session()
     couriers_info = {'couriers': []}
 
@@ -89,6 +82,8 @@ async def get_all_couriers(offset: int = 0, limit: int = 1) -> CouriersModel:
                                                 CourierWorkingHour.end_time).
                                   filter(offset <= CourierWorkingHour.courier_id,
                                          CourierWorkingHour.courier_id < offset + limit)))
+    session.close()
+
     for courier in couriers_data:
         courier_info = {}
 

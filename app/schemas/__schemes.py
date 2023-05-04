@@ -21,9 +21,6 @@ class CourierModel(BaseModel):
     @validator('regions')
     def regions_validator(cls, regions):
         for region in regions:
-            if not isinstance(region, int):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail=f"Incorrect region type: {type(region)} whereas <int> should be")
             if region <= 0:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                     detail=f"Incorrect region: {region}. Value should be above zero")
@@ -32,9 +29,6 @@ class CourierModel(BaseModel):
     @validator('working_hours')
     def working_hours_validator(cls, working_hours):
         for cur_wh in working_hours:
-            if not isinstance(cur_wh, str):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail=f"Incorrect working hours type: {type(cur_wh)} whereas <str> should be")
             if cur_wh.count('-') != 1:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                     detail=f"Incorrect working hours format: quantity of '-' is not equal to one")
@@ -92,8 +86,81 @@ class OrderModel(BaseModel):
     delivery_hours: List[str]
     cost: int
 
+    @validator('weight')
+    def weight_validator(cls, weight):
+        if weight <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Incorrect weight: {weight}. Value should be above zero")
+        return weight
 
-class CompletedOrderModel(BaseModel):
-    courier_id: int
-    order_id: int
-    # complete_time: datetime.date
+    @validator('region')
+    def region_validator(cls, region):
+        if region <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Incorrect region: {region}. Value should be above zero")
+        return region
+
+    @validator('delivery_hours')
+    def delivery_hours_validator(cls, delivery_hours):
+        for cur_dh in delivery_hours:
+            if cur_dh.count('-') != 1:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                    detail=f"Incorrect delivery hours format: quantity of '-' is not equal to one")
+
+            data = cur_dh.split('-')
+            start_time = 0
+            end_time = 0
+
+            for time in data:
+                identifier = 'start time' if data.index(time) == 0 else 'end time'
+                if time.count(':') != 1:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                        detail=f"Incorrect delivery hours format in {identifier}: "
+                                               f"quantity of ':' is not equal to one")
+                separated_time = time.split(':')
+                try:
+                    hours = int(separated_time[0])
+                    minutes = int(separated_time[1])
+                    if identifier[0] == 's':
+                        start_time += hours * 60 + minutes
+                    else:
+                        end_time += hours * 60 + minutes
+                except ValueError:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                        detail=f"Incorrect delivery hours format in {identifier}: "
+                                               f"separation hours and minutes done incorrectly."
+                                               f" hours = {data[0]}, minutes = {data[1]}")
+                if not 0 <= hours <= 23:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                        detail=f"Incorrect delivery hours format in {identifier}: "
+                                               f"{hours} out of hours range")
+                if not 0 <= minutes <= 59:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                        detail=f"Incorrect delivery hours format in {identifier}: "
+                                               f"{minutes} out of minutes range")
+            if start_time >= end_time:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                    detail=f"Incorrect delivery hours values: start time greater then end time")
+        return delivery_hours
+
+    @validator('cost')
+    def cost_validator(cls, cost):
+        if cost <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Incorrect cost: {cost}. Value should be above zero")
+        return cost
+
+
+class OrdersModel(BaseModel):
+    orders: List[OrderModel]
+
+    @validator('orders')
+    def orders_validator(cls, orders):
+        for order in orders:
+            OrderModel.validate(order)
+        return orders
+
+# class CompletedOrderModel(BaseModel):
+#     courier_id: int
+#     order_id: int
+#     complete_time: datetime.date

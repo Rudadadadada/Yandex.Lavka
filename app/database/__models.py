@@ -53,10 +53,10 @@ class CourierRegion(Base, SerializerMixin):
 class OrderDeliveryHour(Base, SerializerMixin):
     __tablename__ = 'orders_delivery_hours'
 
-    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    order_id: int = Column(Integer, ForeignKey('orders.id'), nullable=False)
-    start_time: Time = Column(Time, nullable=False)
-    end_time: Time = Column(Time, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    order_id = Column(Integer, ForeignKey('orders.id'), nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
 
     def __init__(self, order_id, start_time, end_time):
         self.order_id = order_id
@@ -67,10 +67,10 @@ class OrderDeliveryHour(Base, SerializerMixin):
 class Order(Base, SerializerMixin):
     __tablename__ = 'orders'
 
-    id: int = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    weight: int = Column(Integer, nullable=False)
-    region: int = Column(Integer, nullable=False)
-    cost: int = Column(Integer, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    weight = Column(Integer, nullable=False)
+    region = Column(Integer, nullable=False)
+    cost = Column(Integer, nullable=False)
 
     def __init__(self, weight, region, cost):
         self.weight = weight
