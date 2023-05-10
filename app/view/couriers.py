@@ -3,12 +3,14 @@ from starlette import status
 
 from app.database.__models import Courier, Region, CourierRegion, CourierWorkingHour
 from app.database.db_session import create_session
-from app.schemas.__schemes import CouriersModel, CourierModel
-from app.utils.time import time_to_string
+from app.schemas.__couriers import CourierIds, PostCouriersModel, GetCourierModel, GetCouriersModel
+from app.utils.time import time_to_string, split_time
 
 
-async def post_couriers(couriers: CouriersModel):
+async def post_couriers(couriers: PostCouriersModel) -> CourierIds:
     session = create_session()
+
+    courier_ids = {'courier_ids': []}
 
     for courier in couriers.couriers:
         new_courier = Courier(courier_type=courier.courier_type)
@@ -31,16 +33,18 @@ async def post_couriers(couriers: CouriersModel):
             session.commit()
 
         for cur_wh in courier.working_hours:
-            separated_wh = cur_wh.split('-')
-            start_time = separated_wh[0]
-            end_time = separated_wh[1]
+            start_time, end_time = split_time(cur_wh)
 
             new_wh = CourierWorkingHour(courier_id=new_courier.id, start_time=start_time, end_time=end_time)
             session.add(new_wh)
             session.commit()
 
+        courier_ids['courier_ids'].append(new_courier.id)
 
-async def get_courier_by_id(courier_id: int) -> CourierModel:
+    return CourierIds.parse_obj(courier_ids)
+
+
+async def get_courier_by_id(courier_id: int) -> GetCourierModel:
     session = create_session()
     courier_info = {}
 
@@ -59,19 +63,25 @@ async def get_courier_by_id(courier_id: int) -> CourierModel:
 
     session.close()
 
+    courier_info['courier_id'] = courier_id
     courier_info['courier_type'] = courier_type
     courier_info['regions'] = courier_regions
     courier_info['working_hours'] = courier_working_hours
 
-    return CourierModel.parse_obj(courier_info)
+    return GetCourierModel.parse_obj(courier_info)
 
 
-async def get_all_couriers(offset: int = 0, limit: int = 1) -> CouriersModel:
+async def get_all_couriers(limit: int = 1, offset: int = 0, courier_type=None) -> GetCouriersModel:
     session = create_session()
     couriers_info = {'couriers': []}
 
-    couriers_data = list(session.query(Courier.id, Courier.courier_type).filter(offset <= Courier.id,
-                                                                                Courier.id < offset + limit))
+    couriers_data = session.query(Courier.id, Courier.courier_type).filter(offset <= Courier.id,
+                                                                           Courier.id < offset + limit)
+    if courier_type:
+        couriers_data = couriers_data.filter(offset <= Courier.id, Courier.id < offset + limit).\
+            filter(Courier.courier_type == courier_type)
+    couriers_data = list(couriers_data)
+
     regions_data = list(session.query(CourierRegion.courier_id, Region.region).
                         outerjoin(CourierRegion, Region.id == CourierRegion.region_id).
                         filter(offset <= CourierRegion.courier_id,
@@ -91,11 +101,17 @@ async def get_all_couriers(offset: int = 0, limit: int = 1) -> CouriersModel:
                                    filter(lambda data: data[0] == courier.id, regions_data)))
         courier_working_hours = list(map(lambda data: data[1],
                                          filter(lambda data: data[0] == courier.id, working_hours_data)))
+        if not courier_regions:
+            continue
 
+        if not courier_working_hours:
+            continue
+
+        courier_info['courier_id'] = courier.id
         courier_info['courier_type'] = courier.courier_type
         courier_info['regions'] = courier_regions
         courier_info['working_hours'] = courier_working_hours
 
         couriers_info['couriers'].append(courier_info)
 
-    return CouriersModel.parse_obj(couriers_info)
+    return GetCouriersModel.parse_obj(couriers_info)

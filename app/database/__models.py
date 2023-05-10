@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Time
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time, DateTime
 from sqlalchemy_serializer import SerializerMixin
 
 from app.database.db_session import Base
@@ -71,8 +71,32 @@ class Order(Base, SerializerMixin):
     weight = Column(Integer, nullable=False)
     region = Column(Integer, nullable=False)
     cost = Column(Integer, nullable=False)
+    completed_time = Column(DateTime)
 
-    def __init__(self, weight, region, cost):
+    def __init__(self, weight, region, cost, completed_time):
         self.weight = weight
         self.region = region
         self.cost = cost
+        self.completed_time = completed_time
+
+
+class DistributedOrders(Base, SerializerMixin):
+    __tablename__ = 'distributed_orders'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    order_id = Column(Integer, ForeignKey('orders.id'), nullable=False)
+    courier_id = Column(Integer, ForeignKey('couriers.id'), nullable=False)
+    date = Column(Date, nullable=False)
+    start_time = Column(Time)
+    end_time = Column(Time)
+    minimum_difference = Column(Integer)
+    earning = Column(Integer)
+
+    def __init__(self, order_id, courier_id, date, start_time, minimum_difference, spend_time, earning):
+        self.order_id = order_id
+        self.courier_id = courier_id
+        self.date = date
+        self.start_time = start_time
+        self.minimum_difference = minimum_difference
+        self.spend_time = spend_time
+        self.earning = earning

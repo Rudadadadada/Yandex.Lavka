@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Request
 from starlette import status
 
-from app.schemas.__schemes import CourierModel, CouriersModel
+from app.schemas.__couriers import CourierIds, PostCouriersModel, GetCourierModel, GetCouriersModel
 from app.view.couriers import post_couriers, get_courier_by_id, get_all_couriers
 from app.limiter import limiter
 
-courier = APIRouter()
+courier = APIRouter(tags=['courier-controller'])
 
 
 @courier.post(
@@ -15,9 +15,9 @@ courier = APIRouter()
     name='Create couriers'
 )
 @limiter.limit("10/second")
-async def create_couriers(request: Request, couriers: CouriersModel):
-    CouriersModel.validate(couriers)
-    await post_couriers(couriers)
+async def create_couriers(request: Request, couriers: PostCouriersModel) -> CourierIds:
+    PostCouriersModel.validate(couriers)
+    return await post_couriers(couriers)
 
 
 @courier.get(
@@ -27,7 +27,7 @@ async def create_couriers(request: Request, couriers: CouriersModel):
     name='Get courier'
 )
 @limiter.limit("10/second")
-async def get_courier(request: Request, courier_id: int) -> CourierModel:
+async def get_courier(request: Request, courier_id: int) -> GetCourierModel:
     return await get_courier_by_id(courier_id)
 
 
@@ -38,5 +38,5 @@ async def get_courier(request: Request, courier_id: int) -> CourierModel:
     name='Get couriers',
 )
 @limiter.limit("10/second")
-async def get_couriers(request: Request, offset: int = 0, limit: int = 1) -> CouriersModel:
-    return await get_all_couriers(offset, limit)
+async def get_couriers(request: Request, limit: int = 1, offset: int = 0) -> GetCouriersModel:
+    return await get_all_couriers(limit, offset)
