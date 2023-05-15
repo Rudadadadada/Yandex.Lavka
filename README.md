@@ -1,92 +1,111 @@
-# Шаблон для решения вступительного задания Python
+# Вступительное задание Python в ШБР
 
+## Реализовано:
 
+### Задание 1
 
-## Getting started
+#### Реализованы следующие ручки:
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+##### order-controller
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+1. ``POST /orders`` - загрузка заказов в базу данных.
+2. ``POST /orders/complete`` - помечает заказ выполненным.  **Примечание:** Response openapi и enrollmet'а различаются. В openapi нужно дублировать request, а в enrollment написано, что нужно выводить только индентификатор. Сделано согласно openapi.
+3. ``GET /orders`` - возвращает информацию о заказах, в том числе их id и время, когда заказ был доставлен (если не был доставлен, время доставки = null).
+4. ``GET /orders/{order_id}`` - возвращает информацию о заказе по id, в том числе время, когда заказ был доставлен (если не был доставлен, время доставки = null).
 
-## Add your files
+##### courier-controller
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+1. ``POST /couriers`` - загрузка курьеров в базу данных.
+2. ``GET /couriers`` - возвращает информацию о курьерах, в том числе их id.
+3. ``GET /couriers/{courier_id}`` - возвращает информацию о курьере по id. 
 
-```
-cd existing_repo
-git remote add origin https://git.yandex-academy.ru/school/2023-06/enrollment/enrollment-template-python.git
-git branch -M master
-git push -uf origin master
-```
+### Задание 2
 
-## Integrate with your tools
+#### Реализованы следующие ручки:
 
-- [ ] [Set up project integrations](https://git.yandex-academy.ru/school/2023-06/enrollment/enrollment-template-python/-/settings/integrations)
+##### courier-controller
 
-## Collaborate with your team
+1. ``GET /couriers/meta-info/{courier_id}`` - возвращает заработок и рейтинг курьера.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+### Задание 3
 
-## Test and Deploy
+#### Реализация Rate limiter
 
-Use the built-in continuous integration in GitLab.
+Сделано с использованием библиотеки sloawapi. RPS = 10 на каждую ручку.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Конфигурации rate limiter находятся в файле ``app/limiter``
 
-***
+````
+limiter = Limiter(key_func=get_remote_address) 
+LIMIT = "10/second"
+````
 
-# Editing this README
+### Задание 4
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+#### Реализованы следующие ручки:
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+##### order-controller
 
-## Name
-Choose a self-explaining name for your project.
+1. ``POST /orders/assign`` - распределяет заказы по курьерам.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+##### courier-controller
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+1. ``GET /couriers/assignments`` - возвращает информацию о распределении заказов по курьерам.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+***Важно***: все ручки имеют определенную валидацию, поэтому нужно отправлять корректные данные, чтобы было
+200 ОК. 
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Например, в ручке POST /orders/complete есть валидация времени. Если курьер не работает в переданное время или заказ не
+может быть принят в переданное время, то будет 400 Bad request. Также время начала должно быть <= времени конца.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## Запуск:
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+1. Чтобы собрать Dockerfile нужно воспользоваться командой:
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+``docker build . -t app:latest``
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+2. Чтобы собрать и запустить docker-compose нужно воспользоваться командой:
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+``docker compose up -d --build``
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+## Идея алгоритма и мысли:
+### Идея алгоритма
+Задача распределения заказов по курьерам является нетривиальной и NP-полной. В ходе прочтения 
+множественных статей на разных языках, появилось много идей для реализации алгоритма: 
+1. Задача о назначениях и венгерский алгоритм
+2. Эволюционные алгоритмы
+3. Мультипликативный рюкзак
+4. Алгоритмы с использованием линейного программирования
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Для решения задачи, я постарался выполнить приближенный алгоритм для мультипликативного рюкзака 
+с использованием жадного алгоритма на основе некоторой метрики и двух указателей. При помощи метрики, 
+мы можем сделать сортировку подходящих (удовлетворяющих всем требованиям курьера) заказов, а затем жадно, 
+но верно, распределять заказы по группам одному курьеру. Для того, чтобы выполнить условие задачи 
+(минимализировать стоимость доставки), при помощи двух указателей я набираю заказы в следующем порядке: 
+вначале берем первый заказ (самый дешевый и самый срочный), а затем к нему пытаемся набрать оставшиеся 
+заказы с конца отсортированного списка (самые дорогие и не самые срочные). Донабор происходит согласно 
+размеру группы и согласно вместимости курьера (рюкзака).Так как типов курьеров много, то данный алгоритм 
+нужно выполнить для каждого типа курьеров (3 раза). Таким образом, мы с некоторой точностью постараемся и
+минимизировать стоимость доставки, и выполнить как можно больше заказов.
 
-## License
-For open source projects, say how it is licensed.
+***Важно***: чтобы тестировать распределение, нужно менять дату распределения вручную. 
+Дата по дефолту = сегодняшему дню. Также нужно менять валидацию времени, поскольку у меня сделано, 
+что дата распределения <= текущий день (логично).
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### Мысли
+Во время выполнения задания, я много раз сталкивался с проблемой различия openapi и enrollment'a, пришлось
+задавать вопросы в чат-боте, но там, к сожалению, мне отвечали как будто совсем не то, что нужно. Поэтому
+некоторые моменты в работе выполнены по-своему или согласно openapi, в котором не всегда было понятно, что
+происходит. Например, мне так и не ответили про дубляж ответов в ручках post couriers/ и post orders/.
+
+Очень странная ручка post complete/orders, в которой я могу передавать любое время выполненного заказа.
+В чат-боте мне ответили, что время выполненного заказа != времени распределенного. Это, в целом, логично, но
+хотелось бы получить больше информации про это сразу, например, получить какой-нибудь коэффициент 
+"хорошего курьера", который может опаздывать или приходить раньше, например, в интервале +- 10 минут.
+
+Почему я не могу передавать дату распределения? Это очень сильно усложняет тестирование, поскольку нужно
+лезть в код и вручную менять.
+
+Подводя итоги, хочется сказать, что проект выдался большим, во время его выполнения я освежил и дополнил свои
+знания в разработке REST-API сервисов. Надеюсь, это решение Вам понравится, и я смогу принять участие в проекте
+ШБР, о котором так сильно мечтаю. Спасибо!

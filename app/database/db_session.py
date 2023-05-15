@@ -2,7 +2,6 @@ from sqlalchemy import create_engine, URL, Engine, orm
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import Session
 
-
 Base = declarative_base()
 
 __factory = None
@@ -24,6 +23,18 @@ def global_init(db_params: dict):
     from app.database.__models import Courier, Order, OrderDeliveryHour, CourierWorkingHour, Region
 
     Base.metadata.create_all(engine)
+
+
+def global_drop(db_params: dict):
+    if not db_params:
+        raise Exception("Database params should be specified.")
+
+    url_object = URL.create(**db_params)
+    engine: Engine = create_engine(url_object, echo=False)
+
+    from app.database.__models import Courier, Order, OrderDeliveryHour, CourierWorkingHour, Region
+
+    Base.metadata.drop_all(engine)
 
 
 def create_session() -> Session:

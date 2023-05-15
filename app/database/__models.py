@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Time, DateTime, Float
 from sqlalchemy_serializer import SerializerMixin
 
 from app.database.db_session import Base
@@ -86,17 +86,22 @@ class DistributedOrders(Base, SerializerMixin):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     order_id = Column(Integer, ForeignKey('orders.id'), nullable=False)
     courier_id = Column(Integer, ForeignKey('couriers.id'), nullable=False)
+    group_order_id = Column(Integer, nullable=False)
     date = Column(Date, nullable=False)
-    start_time = Column(Time)
-    end_time = Column(Time)
-    minimum_difference = Column(Integer)
-    earning = Column(Integer)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    predictable_time = Column(Time, nullable=False)
+    after_fact_time = Column(DateTime)
+    earnings = Column(Float)
 
-    def __init__(self, order_id, courier_id, date, start_time, minimum_difference, spend_time, earning):
+    def __init__(self, order_id, courier_id, group_order_id, date, start_time, end_time, predictable_time,
+                 after_fact_time, earnings):
         self.order_id = order_id
         self.courier_id = courier_id
+        self.group_order_id = group_order_id
         self.date = date
         self.start_time = start_time
-        self.minimum_difference = minimum_difference
-        self.spend_time = spend_time
-        self.earning = earning
+        self.end_time = end_time
+        self.predictable_time = predictable_time
+        self.after_fact_time = after_fact_time
+        self.earnings = earnings
