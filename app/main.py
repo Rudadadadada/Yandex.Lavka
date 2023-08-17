@@ -6,8 +6,6 @@ from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
 from app.limiter import limiter
-from app.config import DATABASE
-from app.database.db_session import global_init, global_drop
 from app.routers import orders, couriers
 
 
@@ -25,7 +23,6 @@ def get_application() -> FastAPI:
 app = get_application()
 
 
-# костыль, чтобы подогнать под опенапи задания. Убрал дефолтный 422 и 200.
 def custom_openapi():
     if not app.openapi_schema:
         app.openapi_schema = get_openapi(
@@ -51,10 +48,6 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
-
-if DATABASE['database'] == 'test':
-    global_drop(DATABASE)
-global_init(DATABASE)
 
 # if __name__ == '__main__':
 #     uvicorn.run("main:app", host="localhost", port=8080)
